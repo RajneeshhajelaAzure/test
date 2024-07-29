@@ -8,40 +8,36 @@ class Program
         int[] input = { 9, 1, 9, 4, 9, 4, 1, 3 };
         Dictionary<int, int> frequency = new Dictionary<int, int>();
 
-        for (int i = 0; i < input.Length; i++)
+        // Count the frequency of each number
+        foreach (var num in input)
         {
-            if (frequency.ContainsKey(input[i]))
+            if (frequency.ContainsKey(num))
             {
-                frequency[input[i]]++;
+                frequency[num]++;
             }
             else
             {
-                frequency[input[i]] = 1;
+                frequency[num] = 1;
             }
         }
 
-        List<int> uniqueNumbers = new List<int>();
-        foreach (int key in frequency.Keys)
-        {
-            uniqueNumbers.Add(key);
-        }
+        // Extract unique numbers
+        List<int> uniqueNumbers = new List<int>(frequency.Keys);
 
-        for (int i = 0; i < uniqueNumbers.Count - 1; i++)
+        // Sort the unique numbers based on frequency (descending) and value (descending)
+        uniqueNumbers.Sort((a, b) =>
         {
-            for (int j = i + 1; j < uniqueNumbers.Count; j++)
+            int freqCompare = frequency[b].CompareTo(frequency[a]);
+            if (freqCompare == 0)
             {
-                if (frequency[uniqueNumbers[i]] < frequency[uniqueNumbers[j]] ||
-                    (frequency[uniqueNumbers[i]] == frequency[uniqueNumbers[j]] && uniqueNumbers[i] < uniqueNumbers[j]))
-                {
-                    int temp = uniqueNumbers[i];
-                    uniqueNumbers[i] = uniqueNumbers[j];
-                    uniqueNumbers[j] = temp;
-                }
+                return b.CompareTo(a); // If frequencies are the same, compare by value (descending)
             }
-        }
+            return freqCompare;
+        });
 
-        // Print the sorted numbers
-        foreach (int number in uniqueNumbers)
+        uniqueNumbers.Sort((a, b) => b.CompareTo(a));
+                // Print the sorted numbers
+        foreach (var number in uniqueNumbers)
         {
             Console.Write(number + " ");
         }
