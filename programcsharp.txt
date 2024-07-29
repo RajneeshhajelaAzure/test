@@ -1,26 +1,49 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 
 class Program
 {
     static void Main()
     {
-        List<int> numbers = new List<int> { 9, 1, 9, 4, 9, 4, 1, 3 };
-        
-        var grouped = numbers
-            .GroupBy(n => n)
-            .Select(g => new { Number = g.Key, Count = g.Count() })
-            .ToList();
-        
-        var sorted = grouped
-            .OrderByDescending(g => g.Count)
-            .ThenByDescending(g => g.Number)
-            .ToList();
-        
-        foreach (var item in sorted)
+        int[] input = { 9, 1, 9, 4, 9, 4, 1, 3 };
+        Dictionary<int, int> frequency = new Dictionary<int, int>();
+
+        for (int i = 0; i < input.Length; i++)
         {
-            Console.Write(item.Number + " ");
+            if (frequency.ContainsKey(input[i]))
+            {
+                frequency[input[i]]++;
+            }
+            else
+            {
+                frequency[input[i]] = 1;
+            }
+        }
+
+        List<int> uniqueNumbers = new List<int>();
+        foreach (int key in frequency.Keys)
+        {
+            uniqueNumbers.Add(key);
+        }
+
+        for (int i = 0; i < uniqueNumbers.Count - 1; i++)
+        {
+            for (int j = i + 1; j < uniqueNumbers.Count; j++)
+            {
+                if (frequency[uniqueNumbers[i]] < frequency[uniqueNumbers[j]] ||
+                    (frequency[uniqueNumbers[i]] == frequency[uniqueNumbers[j]] && uniqueNumbers[i] < uniqueNumbers[j]))
+                {
+                    int temp = uniqueNumbers[i];
+                    uniqueNumbers[i] = uniqueNumbers[j];
+                    uniqueNumbers[j] = temp;
+                }
+            }
+        }
+
+        // Print the sorted numbers
+        foreach (int number in uniqueNumbers)
+        {
+            Console.Write(number + " ");
         }
     }
 }
