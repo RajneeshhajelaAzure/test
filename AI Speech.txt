@@ -1,0 +1,49 @@
+using Microsoft.CognitiveServices.Speech;
+using System;
+using System.Threading.Tasks;
+
+class Program
+{
+    static async Task Main(string[] args)
+    {
+        var config = SpeechConfig.FromSubscription("22ff4fae093d46a38cc6f2d76d6afc74", "eastus");
+
+        Console.WriteLine("Say something...");
+        using (var recognizer = new SpeechRecognizer(config))
+        {
+            var result = await recognizer.RecognizeOnceAsync();
+
+            if (result.Reason == ResultReason.RecognizedSpeech)
+            {
+                Console.WriteLine($"Recognized: {result.Text}");
+
+                // Now, let's convert the recognized text to speech
+                using (var synthesizer = new SpeechSynthesizer(config))
+                {
+                    var synthesisResult = await synthesizer.SpeakTextAsync(result.Text);
+
+                    if (synthesisResult.Reason == ResultReason.SynthesizingAudioCompleted)
+                    {
+                        Console.WriteLine("Speech synthesized to speaker.");
+                    }
+                    else if (synthesisResult.Reason == ResultReason.Canceled)
+                    {
+                        var cancellation = SpeechSynthesisCancellationDetails.FromResult(synthesisResult);
+                        Console.WriteLine($"CANCELED: Reason={cancellation.Reason}");
+                        Console.WriteLine($"CANCELED: ErrorDetails=[{cancellation.ErrorDetails}]");
+                    }
+                }
+            }
+            else if (result.Reason == ResultReason.NoMatch)
+            {
+                Console.WriteLine("No speech could be recognized.");
+            }
+            else if (result.Reason == ResultReason.Canceled)
+            {
+        //        var cancellation = SpeechRecognitionCancellationDetails.FromResult(result);
+             //   Console.WriteLine($"CANCELED: Reason={cancellation.Reason}");
+               // Console.WriteLine($"CANCELED: ErrorDetails=[{cancellation.ErrorDetails}]");
+            }
+        }
+    }
+}
