@@ -1,0 +1,75 @@
+ Generating the JWT Token (Initial Token with 12 Minutes Expiry)
+
+public string GenerateToken(string username)
+{
+    var secretKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("your_secret_key"));
+    var signingCredentials = new SigningCredentials(secretKey, SecurityAlgorithms.HmacSha256);
+
+    var claims = new[]
+    {
+        new Claim(JwtRegisteredClaimNames.Sub, username),
+        new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
+    };
+
+    // Set the expiry to 12 minutes
+    var tokenOptions = new JwtSecurityToken(
+        issuer: "yourdomain.com",
+        audience: "yourdomain.com",
+        claims: claims,
+        expires: DateTime.Now.AddMinutes(12),
+        signingCredentials: signingCredentials
+    );
+
+    string token = new JwtSecurityTokenHandler().WriteToken(tokenOptions);
+    return token;
+}
+
+<b>2. Extending the Token Expiration Time at Runtime
+If the user wants to extend the token expiration time during runtime (e.g., after authenticating), you would:
+
+Validate the existing token.
+If valid, issue a new token with an extended expiration time.
+</b>
+
+public string ExtendTokenExpiry(string token, int additionalMinutes)
+{
+    var tokenHandler = new JwtSecurityTokenHandler();
+    var secretKey = Encoding.UTF8.GetBytes("your_secret_key");
+
+    // Validate the existing token
+    var validationParameters = new TokenValidationParameters
+    {
+        ValidateIssuer = true,
+        ValidateAudience = true,
+        ValidateLifetime = true,
+        ValidateIssuerSigningKey = true,
+        ValidIssuer = "yourdomain.com",
+        ValidAudience = "yourdomain.com",
+        IssuerSigningKey = new SymmetricSecurityKey(secretKey)
+    };
+
+    try
+    {
+        // Extract the token claims (e.g., username, jti)
+        var principal = tokenHandler.ValidateToken(token, validationParameters, out SecurityToken validatedToken);
+
+        // Create new token with extended expiration
+        var jwtToken = validatedToken as JwtSecurityToken;
+        var newExpiration = DateTime.Now.AddMinutes(additionalMinutes);
+
+        var newToken = new JwtSecurityToken(
+            issuer: jwtToken.Issuer,
+            audience: jwtToken.Audience,
+            claims: jwtToken.Claims,
+            expires: newExpiration,
+            signingCredentials: new SigningCredentials(new SymmetricSecurityKey(secretKey), SecurityAlgorithms.HmacSha256)
+        );
+
+        // Return the new token with extended expiry
+        return tokenHandler.WriteToken(newToken);
+    }
+    catch (Exception ex)
+    {
+        throw new SecurityTokenException("Invalid token");
+    }
+}
