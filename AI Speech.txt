@@ -1,5 +1,5 @@
 https://docs.google.com/forms/d/e/1FAIpQLScYoSEmu9YeK0ScnOJGtyHWV0mM9UjlI4rldjENeTURTL9wGw/viewform
-
+https://www.canva.com/design/DAGi1Etoxks/JSgccc3tRXe2jPviKEER2Q/edit
 
 https://degreed.com/plan/2703260
 using Microsoft.CognitiveServices.Speech;
