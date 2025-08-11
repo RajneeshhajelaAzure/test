@@ -6,10 +6,10 @@
              xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
              id="Definitions_1"
              targetNamespace="http://bpmn.io/schema/bpmn"
-             exporter="bpmn.io"
-             exporterVersion="8.4.0">
+             exporter="Camunda Modeler"
+             exporterVersion="5.0.0">
 
-  <process id="LoanOriginationProcess" isExecutable="true">
+  <process id="LoanOriginationProcess" name="Loan Origination Process" isExecutable="true">
     <startEvent id="StartEvent_1" name="Start"/>
     <task id="Task_KYC" name="KYC Verification"/>
     <task id="Task_FraudCheck" name="Fraud Check"/>
@@ -22,15 +22,8 @@
     <sequenceFlow id="Flow_KYC_To_FraudCheck" sourceRef="Task_KYC" targetRef="Task_FraudCheck"/>
     <sequenceFlow id="Flow_FraudCheck_To_CreditScoring" sourceRef="Task_FraudCheck" targetRef="Task_CreditScoring"/>
     <sequenceFlow id="Flow_CreditScoring_To_Gateway" sourceRef="Task_CreditScoring" targetRef="Gateway_CreditApproved"/>
-    <sequenceFlow id="Flow_Gateway_To_LoanApproved" sourceRef="Gateway_CreditApproved" targetRef="EndEvent_LoanApproved"/>
-    <sequenceFlow id="Flow_Gateway_To_LoanRejected" sourceRef="Gateway_CreditApproved" targetRef="EndEvent_LoanRejected"/>
-
-    <outgoing>Flow_Start_To_KYC</outgoing>
-    <outgoing>Flow_KYC_To_FraudCheck</outgoing>
-    <outgoing>Flow_FraudCheck_To_CreditScoring</outgoing>
-    <outgoing>Flow_CreditScoring_To_Gateway</outgoing>
-    <outgoing>Flow_Gateway_To_LoanApproved</outgoing>
-    <outgoing>Flow_Gateway_To_LoanRejected</outgoing>
+    <sequenceFlow id="Flow_Gateway_To_LoanApproved" sourceRef="Gateway_CreditApproved" targetRef="EndEvent_LoanApproved" name="Yes"/>
+    <sequenceFlow id="Flow_Gateway_To_LoanRejected" sourceRef="Gateway_CreditApproved" targetRef="EndEvent_LoanRejected" name="No"/>
   </process>
 
   <bpmndi:BPMNDiagram id="BPMNDiagram_LoanOrigination">
@@ -39,23 +32,48 @@
         <dc:Bounds x="100" y="100" width="36" height="36"/>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Task_KYC_di" bpmnElement="Task_KYC">
-        <dc:Bounds x="200" y="80" width="100" height="80"/>
+        <dc:Bounds x="160" y="80" width="100" height="80"/>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Task_FraudCheck_di" bpmnElement="Task_FraudCheck">
-        <dc:Bounds x="350" y="80" width="100" height="80"/>
+        <dc:Bounds x="280" y="80" width="100" height="80"/>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Task_CreditScoring_di" bpmnElement="Task_CreditScoring">
-        <dc:Bounds x="500" y="80" width="100" height="80"/>
+        <dc:Bounds x="400" y="80" width="100" height="80"/>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Gateway_CreditApproved_di" bpmnElement="Gateway_CreditApproved">
-        <dc:Bounds x="650" y="80" width="50" height="50"/>
+        <dc:Bounds x="520" y="95" width="50" height="50"/>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="EndEvent_LoanApproved_di" bpmnElement="EndEvent_LoanApproved">
-        <dc:Bounds x="750" y="60" width="36" height="36"/>
+        <dc:Bounds x="600" y="60" width="36" height="36"/>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="EndEvent_LoanRejected_di" bpmnElement="EndEvent_LoanRejected">
-        <dc:Bounds x="750" y="120" width="36" height="36"/>
+        <dc:Bounds x="600" y="140" width="36" height="36"/>
       </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNEdge id="Flow_Start_To_KYC_di" bpmnElement="Flow_Start_To_KYC">
+        <di:waypoint x="136" y="118"/>
+        <di:waypoint x="160" y="118"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_KYC_To_FraudCheck_di" bpmnElement="Flow_KYC_To_FraudCheck">
+        <di:waypoint x="260" y="118"/>
+        <di:waypoint x="280" y="118"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_FraudCheck_To_CreditScoring_di" bpmnElement="Flow_FraudCheck_To_CreditScoring">
+        <di:waypoint x="380" y="118"/>
+        <di:waypoint x="400" y="118"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_CreditScoring_To_Gateway_di" bpmnElement="Flow_CreditScoring_To_Gateway">
+        <di:waypoint x="500" y="118"/>
+        <di:waypoint x="520" y="118"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Gateway_To_LoanApproved_di" bpmnElement="Flow_Gateway_To_LoanApproved">
+        <di:waypoint x="570" y="118"/>
+        <di:waypoint x="600" y="78"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Gateway_To_LoanRejected_di" bpmnElement="Flow_Gateway_To_LoanRejected">
+        <di:waypoint x="570" y="118"/>
+        <di:waypoint x="600" y="158"/>
+      </bpmndi:BPMNEdge>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>
 </definitions>
