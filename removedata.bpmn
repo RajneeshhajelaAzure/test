@@ -1,79 +1,94 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
              xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-             xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
-             xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
-             xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
-             id="Definitions_1"
-             targetNamespace="http://bpmn.io/schema/bpmn"
-             exporter="Camunda Modeler"
-             exporterVersion="5.0.0">
+             xmlns:bizagi="http://www.bizagi.com/BPMN20"
+             id="Definitions_EnhancedOrderFlow"
+             targetNamespace="http://bizagi.com/bpmn">
 
-  <process id="LoanOriginationProcess" name="Loan Origination Process" isExecutable="true">
-    <startEvent id="StartEvent_1" name="Start"/>
-    <task id="Task_KYC" name="KYC Verification"/>
-    <task id="Task_FraudCheck" name="Fraud Check"/>
-    <task id="Task_CreditScoring" name="Credit Scoring"/>
-    <exclusiveGateway id="Gateway_CreditApproved" name="Credit Approved?"/>
-    <endEvent id="EndEvent_LoanApproved" name="Loan Approved"/>
-    <endEvent id="EndEvent_LoanRejected" name="Loan Rejected"/>
+  <process id="OrderFlowEnhanced" name="Order Flow with DMN, REST, and Async Events" isExecutable="true">
+    
+    <laneSet id="LaneSet_Main">
+      <lane id="Lane_Customer" name="Customer"/>
+      <lane id="Lane_Order" name="Order"/>
+      <lane id="Lane_Payment" name="Payment"/>
+      <lane id="Lane_Invoice" name="Invoice"/>
+      <lane id="Lane_Shipment" name="Shipment"/>
+      <lane id="Lane_Notify" name="Notify"/>
+    </laneSet>
 
-    <sequenceFlow id="Flow_Start_To_KYC" sourceRef="StartEvent_1" targetRef="Task_KYC"/>
-    <sequenceFlow id="Flow_KYC_To_FraudCheck" sourceRef="Task_KYC" targetRef="Task_FraudCheck"/>
-    <sequenceFlow id="Flow_FraudCheck_To_CreditScoring" sourceRef="Task_FraudCheck" targetRef="Task_CreditScoring"/>
-    <sequenceFlow id="Flow_CreditScoring_To_Gateway" sourceRef="Task_CreditScoring" targetRef="Gateway_CreditApproved"/>
-    <sequenceFlow id="Flow_Gateway_To_LoanApproved" sourceRef="Gateway_CreditApproved" targetRef="EndEvent_LoanApproved" name="Yes"/>
-    <sequenceFlow id="Flow_Gateway_To_LoanRejected" sourceRef="Gateway_CreditApproved" targetRef="EndEvent_LoanRejected" name="No"/>
+    <!-- BPMN Elements -->
+    <startEvent id="StartEvent_OrderPlaced" name="Place Order" />
+    <serviceTask id="ServiceTask_TriggerCamunda" name="Trigger Camunda BPM Flow" />
+    <userTask id="UserTask_ValidateOrder" name="Validate Order Details" />
+    
+    <serviceTask id="ServiceTask_ConfirmPayment" name="Confirm Payment">
+      <bizagi:ServiceTask>
+        <bizagi:endpoint>https://api.paymentgateway.com/charge</bizagi:endpoint>
+        <bizagi:method>POST</bizagi:method>
+        <bizagi:payload>{"orderId":"#{order.id}","amount":"#{order.total}"}</bizagi:payload>
+      </bizagi:ServiceTask>
+    </serviceTask>
+
+    <businessRuleTask id="BusinessRule_ValidatePayment" name="Evaluate Payment via DMN" />
+    <exclusiveGateway id="Gateway_PaymentSuccess" name="Payment Approved?" />
+
+    <serviceTask id="ServiceTask_GenerateInvoice" name="Generate Invoice" />
+    
+    <serviceTask id="ServiceTask_InitiateShipment" name="Initiate Shipment">
+      <bizagi:ServiceTask>
+        <bizagi:endpoint>https://api.logistics.com/ship</bizagi:endpoint>
+        <bizagi:method>POST</bizagi:method>
+        <bizagi:payload>{"orderId":"#{order.id}","address":"#{customer.address}"}</bizagi:payload>
+      </bizagi:ServiceTask>
+    </serviceTask>
+
+    <intermediateCatchEvent id="MessageEvent_ShipmentUpdate" name="Shipment Status Received">
+      <message id="Message_ShipmentUpdate" name="Shipment Update"/>
+    </intermediateCatchEvent>
+
+    <scriptTask id="ScriptTask_InjectTraceAgent" name="Inject TraceAgent" />
+    <endEvent id="EndEvent_NotifyCustomer" name="Notify Customer" />
+    <endEvent id="EndEvent_PaymentRejected" name="Reject Notification" />
+
+    <!-- Sequence Flows -->
+    <sequenceFlow id="Flow1" sourceRef="StartEvent_OrderPlaced" targetRef="ServiceTask_TriggerCamunda"/>
+    <sequenceFlow id="Flow2" sourceRef="ServiceTask_TriggerCamunda" targetRef="UserTask_ValidateOrder"/>
+    <sequenceFlow id="Flow3" sourceRef="UserTask_ValidateOrder" targetRef="ServiceTask_ConfirmPayment"/>
+    <sequenceFlow id="Flow4" sourceRef="ServiceTask_ConfirmPayment" targetRef="BusinessRule_ValidatePayment"/>
+    <sequenceFlow id="Flow5" sourceRef="BusinessRule_ValidatePayment" targetRef="Gateway_PaymentSuccess"/>
+    <sequenceFlow id="Flow6_Approved" sourceRef="Gateway_PaymentSuccess" targetRef="ServiceTask_GenerateInvoice" name="Approved"/>
+    <sequenceFlow id="Flow7" sourceRef="ServiceTask_GenerateInvoice" targetRef="ServiceTask_InitiateShipment"/>
+    <sequenceFlow id="Flow8" sourceRef="ServiceTask_InitiateShipment" targetRef="MessageEvent_ShipmentUpdate"/>
+    <sequenceFlow id="Flow9" sourceRef="MessageEvent_ShipmentUpdate" targetRef="ScriptTask_InjectTraceAgent"/>
+    <sequenceFlow id="Flow10" sourceRef="ScriptTask_InjectTraceAgent" targetRef="EndEvent_NotifyCustomer"/>
+    <sequenceFlow id="Flow6_Rejected" sourceRef="Gateway_PaymentSuccess" targetRef="EndEvent_PaymentRejected" name="Rejected"/>
+
+    <!-- Lane Assignments -->
+    <lane id="Lane_Customer">
+      <flowNodeRef>StartEvent_OrderPlaced</flowNodeRef>
+      <flowNodeRef>EndEvent_NotifyCustomer</flowNodeRef>
+      <flowNodeRef>EndEvent_PaymentRejected</flowNodeRef>
+    </lane>
+    <lane id="Lane_Order">
+      <flowNodeRef>ServiceTask_TriggerCamunda</flowNodeRef>
+      <flowNodeRef>UserTask_ValidateOrder</flowNodeRef>
+    </lane>
+    <lane id="Lane_Payment">
+      <flowNodeRef>ServiceTask_ConfirmPayment</flowNodeRef>
+      <flowNodeRef>BusinessRule_ValidatePayment</flowNodeRef>
+      <flowNodeRef>Gateway_PaymentSuccess</flowNodeRef>
+    </lane>
+    <lane id="Lane_Invoice">
+      <flowNodeRef>ServiceTask_GenerateInvoice</flowNodeRef>
+    </lane>
+    <lane id="Lane_Shipment">
+      <flowNodeRef>ServiceTask_InitiateShipment</flowNodeRef>
+      <flowNodeRef>MessageEvent_ShipmentUpdate</flowNodeRef>
+      <flowNodeRef>ScriptTask_InjectTraceAgent</flowNodeRef>
+    </lane>
+    <lane id="Lane_Notify">
+      <!-- Notification handled at end -->
+    </lane>
+
   </process>
-
-  <bpmndi:BPMNDiagram id="BPMNDiagram_LoanOrigination">
-    <bpmndi:BPMNPlane id="BPMNPlane_LoanOrigination" bpmnElement="LoanOriginationProcess">
-      <bpmndi:BPMNShape id="StartEvent_1_di" bpmnElement="StartEvent_1">
-        <dc:Bounds x="100" y="100" width="36" height="36"/>
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Task_KYC_di" bpmnElement="Task_KYC">
-        <dc:Bounds x="160" y="80" width="100" height="80"/>
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Task_FraudCheck_di" bpmnElement="Task_FraudCheck">
-        <dc:Bounds x="280" y="80" width="100" height="80"/>
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Task_CreditScoring_di" bpmnElement="Task_CreditScoring">
-        <dc:Bounds x="400" y="80" width="100" height="80"/>
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Gateway_CreditApproved_di" bpmnElement="Gateway_CreditApproved">
-        <dc:Bounds x="520" y="95" width="50" height="50"/>
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="EndEvent_LoanApproved_di" bpmnElement="EndEvent_LoanApproved">
-        <dc:Bounds x="600" y="60" width="36" height="36"/>
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="EndEvent_LoanRejected_di" bpmnElement="EndEvent_LoanRejected">
-        <dc:Bounds x="600" y="140" width="36" height="36"/>
-      </bpmndi:BPMNShape>
-
-      <bpmndi:BPMNEdge id="Flow_Start_To_KYC_di" bpmnElement="Flow_Start_To_KYC">
-        <di:waypoint x="136" y="118"/>
-        <di:waypoint x="160" y="118"/>
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_KYC_To_FraudCheck_di" bpmnElement="Flow_KYC_To_FraudCheck">
-        <di:waypoint x="260" y="118"/>
-        <di:waypoint x="280" y="118"/>
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_FraudCheck_To_CreditScoring_di" bpmnElement="Flow_FraudCheck_To_CreditScoring">
-        <di:waypoint x="380" y="118"/>
-        <di:waypoint x="400" y="118"/>
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_CreditScoring_To_Gateway_di" bpmnElement="Flow_CreditScoring_To_Gateway">
-        <di:waypoint x="500" y="118"/>
-        <di:waypoint x="520" y="118"/>
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_Gateway_To_LoanApproved_di" bpmnElement="Flow_Gateway_To_LoanApproved">
-        <di:waypoint x="570" y="118"/>
-        <di:waypoint x="600" y="78"/>
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_Gateway_To_LoanRejected_di" bpmnElement="Flow_Gateway_To_LoanRejected">
-        <di:waypoint x="570" y="118"/>
-        <di:waypoint x="600" y="158"/>
-      </bpmndi:BPMNEdge>
-    </bpmndi:BPMNPlane>
-  </bpmndi:BPMNDiagram>
 </definitions>
