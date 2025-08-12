@@ -1,3 +1,31 @@
+Open VSCode and write prompt via GitHub copilot
+
+Create for preparing BPMN related file Save data in same folder C:\Users\2411800\OneDrive - Cognizant\Desktop\VibeCoding_11_Aug\BPMN-Flow_1,0
+
+We will use this api
+Products https://fakestoreapi.com/products
+Carts https://fakestoreapi.com/carts
+Users https://fakestoreapi.com/users
+and will check duplicate cart in our camunda execution flow
+
+and as a next step
+
+Prepare a BPMN 2.0 XML file that models a Duplicate cart workflow with the steps approved or rejected if cart is duplicate..
+
+Include clear IDs and names for each element
+The BPMN should be compatible with standard BPMN editors (like bpmn.io)
+(remember when we import in bizagi modeler then it should execute that side properly with event task condition and all and it should be in proper format)
+we will use same with Comunda also if require.. so write code same on the base of Bizagi and comunda)
+
+Products https://fakestoreapi.com/products
+Carts https://fakestoreapi.com/carts
+Users https://fakestoreapi.com/users
+
+remember :
+Set History TTL in BPMN Model
+set a global default TTL in your Camunda engine configuration==============================================
+
+
 <?xml version="1.0" encoding="UTF-8"?>
 <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
              xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
