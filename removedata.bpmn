@@ -1,94 +1,80 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
              xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-             xmlns:bizagi="http://www.bizagi.com/BPMN20"
-             id="Definitions_EnhancedOrderFlow"
-             targetNamespace="http://bizagi.com/bpmn">
+             xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+             xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+             xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="duplicateCartWorkflow"
+             targetNamespace="http://example.com/bpmn"
+             exporter="Camunda Modeler"
+             exporterVersion="4.10.0">
 
-  <process id="OrderFlowEnhanced" name="Order Flow with DMN, REST, and Async Events" isExecutable="true">
-    
-    <laneSet id="LaneSet_Main">
-      <lane id="Lane_Customer" name="Customer"/>
-      <lane id="Lane_Order" name="Order"/>
-      <lane id="Lane_Payment" name="Payment"/>
-      <lane id="Lane_Invoice" name="Invoice"/>
-      <lane id="Lane_Shipment" name="Shipment"/>
-      <lane id="Lane_Notify" name="Notify"/>
-    </laneSet>
+    <process id="duplicateCartProcess" name="Duplicate Cart Workflow" isExecutable="true">
+        <startEvent id="startEvent" name="Start"/>
+        <task id="checkForDuplicates" name="Check for Duplicates"/>
+        <exclusiveGateway id="decisionGateway" name="Is Duplicate?"/>
+        <task id="approveCart" name="Approve Cart"/>
+        <task id="rejectCart" name="Reject Cart"/>
+        <endEvent id="endEvent" name="End"/>
 
-    <!-- BPMN Elements -->
-    <startEvent id="StartEvent_OrderPlaced" name="Place Order" />
-    <serviceTask id="ServiceTask_TriggerCamunda" name="Trigger Camunda BPM Flow" />
-    <userTask id="UserTask_ValidateOrder" name="Validate Order Details" />
-    
-    <serviceTask id="ServiceTask_ConfirmPayment" name="Confirm Payment">
-      <bizagi:ServiceTask>
-        <bizagi:endpoint>https://api.paymentgateway.com/charge</bizagi:endpoint>
-        <bizagi:method>POST</bizagi:method>
-        <bizagi:payload>{"orderId":"#{order.id}","amount":"#{order.total}"}</bizagi:payload>
-      </bizagi:ServiceTask>
-    </serviceTask>
+        <sequenceFlow id="flow1" sourceRef="startEvent" targetRef="checkForDuplicates"/>
+        <sequenceFlow id="flow2" sourceRef="checkForDuplicates" targetRef="decisionGateway"/>
+        <sequenceFlow id="flow3" sourceRef="decisionGateway" targetRef="approveCart">
+            <conditionExpression xsi:type="tFormalExpression">not(isDuplicate)</conditionExpression>
+        </sequenceFlow>
+        <sequenceFlow id="flow4" sourceRef="decisionGateway" targetRef="rejectCart">
+            <conditionExpression xsi:type="tFormalExpression">isDuplicate</conditionExpression>
+        </sequenceFlow>
+        <sequenceFlow id="flow5" sourceRef="approveCart" targetRef="endEvent"/>
+        <sequenceFlow id="flow6" sourceRef="rejectCart" targetRef="endEvent"/>
+    </process>
 
-    <businessRuleTask id="BusinessRule_ValidatePayment" name="Evaluate Payment via DMN" />
-    <exclusiveGateway id="Gateway_PaymentSuccess" name="Payment Approved?" />
+    <bpmndi:BPMNDiagram id="BPMNDiagram_duplicateCartWorkflow">
+        <bpmndi:BPMNPlane bpmnElement="duplicateCartProcess">
+            <bpmndi:BPMNShape id="startEvent_di" bpmnElement="startEvent">
+                <dc:Bounds x="100" y="100" width="36" height="36"/>
+            </bpmndi:BPMNShape>
+            <bpmndi:BPMNShape id="checkForDuplicates_di" bpmnElement="checkForDuplicates">
+                <dc:Bounds x="200" y="100" width="100" height="80"/>
+            </bpmndi:BPMNShape>
+            <bpmndi:BPMNShape id="decisionGateway_di" bpmnElement="decisionGateway">
+                <dc:Bounds x="350" y="100" width="50" height="50"/>
+            </bpmndi:BPMNShape>
+            <bpmndi:BPMNShape id="approveCart_di" bpmnElement="approveCart">
+                <dc:Bounds x="450" y="50" width="100" height="80"/>
+            </bpmndi:BPMNShape>
+            <bpmndi:BPMNShape id="rejectCart_di" bpmnElement="rejectCart">
+                <dc:Bounds x="450" y="150" width="100" height="80"/>
+            </bpmndi:BPMNShape>
+            <bpmndi:BPMNShape id="endEvent_di" bpmnElement="endEvent">
+                <dc:Bounds x="600" y="100" width="36" height="36"/>
+            </bpmndi:BPMNShape>
 
-    <serviceTask id="ServiceTask_GenerateInvoice" name="Generate Invoice" />
-    
-    <serviceTask id="ServiceTask_InitiateShipment" name="Initiate Shipment">
-      <bizagi:ServiceTask>
-        <bizagi:endpoint>https://api.logistics.com/ship</bizagi:endpoint>
-        <bizagi:method>POST</bizagi:method>
-        <bizagi:payload>{"orderId":"#{order.id}","address":"#{customer.address}"}</bizagi:payload>
-      </bizagi:ServiceTask>
-    </serviceTask>
-
-    <intermediateCatchEvent id="MessageEvent_ShipmentUpdate" name="Shipment Status Received">
-      <message id="Message_ShipmentUpdate" name="Shipment Update"/>
-    </intermediateCatchEvent>
-
-    <scriptTask id="ScriptTask_InjectTraceAgent" name="Inject TraceAgent" />
-    <endEvent id="EndEvent_NotifyCustomer" name="Notify Customer" />
-    <endEvent id="EndEvent_PaymentRejected" name="Reject Notification" />
-
-    <!-- Sequence Flows -->
-    <sequenceFlow id="Flow1" sourceRef="StartEvent_OrderPlaced" targetRef="ServiceTask_TriggerCamunda"/>
-    <sequenceFlow id="Flow2" sourceRef="ServiceTask_TriggerCamunda" targetRef="UserTask_ValidateOrder"/>
-    <sequenceFlow id="Flow3" sourceRef="UserTask_ValidateOrder" targetRef="ServiceTask_ConfirmPayment"/>
-    <sequenceFlow id="Flow4" sourceRef="ServiceTask_ConfirmPayment" targetRef="BusinessRule_ValidatePayment"/>
-    <sequenceFlow id="Flow5" sourceRef="BusinessRule_ValidatePayment" targetRef="Gateway_PaymentSuccess"/>
-    <sequenceFlow id="Flow6_Approved" sourceRef="Gateway_PaymentSuccess" targetRef="ServiceTask_GenerateInvoice" name="Approved"/>
-    <sequenceFlow id="Flow7" sourceRef="ServiceTask_GenerateInvoice" targetRef="ServiceTask_InitiateShipment"/>
-    <sequenceFlow id="Flow8" sourceRef="ServiceTask_InitiateShipment" targetRef="MessageEvent_ShipmentUpdate"/>
-    <sequenceFlow id="Flow9" sourceRef="MessageEvent_ShipmentUpdate" targetRef="ScriptTask_InjectTraceAgent"/>
-    <sequenceFlow id="Flow10" sourceRef="ScriptTask_InjectTraceAgent" targetRef="EndEvent_NotifyCustomer"/>
-    <sequenceFlow id="Flow6_Rejected" sourceRef="Gateway_PaymentSuccess" targetRef="EndEvent_PaymentRejected" name="Rejected"/>
-
-    <!-- Lane Assignments -->
-    <lane id="Lane_Customer">
-      <flowNodeRef>StartEvent_OrderPlaced</flowNodeRef>
-      <flowNodeRef>EndEvent_NotifyCustomer</flowNodeRef>
-      <flowNodeRef>EndEvent_PaymentRejected</flowNodeRef>
-    </lane>
-    <lane id="Lane_Order">
-      <flowNodeRef>ServiceTask_TriggerCamunda</flowNodeRef>
-      <flowNodeRef>UserTask_ValidateOrder</flowNodeRef>
-    </lane>
-    <lane id="Lane_Payment">
-      <flowNodeRef>ServiceTask_ConfirmPayment</flowNodeRef>
-      <flowNodeRef>BusinessRule_ValidatePayment</flowNodeRef>
-      <flowNodeRef>Gateway_PaymentSuccess</flowNodeRef>
-    </lane>
-    <lane id="Lane_Invoice">
-      <flowNodeRef>ServiceTask_GenerateInvoice</flowNodeRef>
-    </lane>
-    <lane id="Lane_Shipment">
-      <flowNodeRef>ServiceTask_InitiateShipment</flowNodeRef>
-      <flowNodeRef>MessageEvent_ShipmentUpdate</flowNodeRef>
-      <flowNodeRef>ScriptTask_InjectTraceAgent</flowNodeRef>
-    </lane>
-    <lane id="Lane_Notify">
-      <!-- Notification handled at end -->
-    </lane>
-
-  </process>
+            <bpmndi:BPMNEdge id="flow1_di" bpmnElement="flow1">
+                <di:waypoint x="136" y="118"/>
+                <di:waypoint x="200" y="118"/>
+            </bpmndi:BPMNEdge>
+            <bpmndi:BPMNEdge id="flow2_di" bpmnElement="flow2">
+                <di:waypoint x="300" y="118"/>
+                <di:waypoint x="350" y="118"/>
+            </bpmndi:BPMNEdge>
+            <bpmndi:BPMNEdge id="flow3_di" bpmnElement="flow3">
+                <di:waypoint x="400" y="118"/>
+                <di:waypoint x="450" y="90"/>
+            </bpmndi:BPMNEdge>
+            <bpmndi:BPMNEdge id="flow4_di" bpmnElement="flow4">
+                <di:waypoint x="400" y="118"/>
+                <di:waypoint x="450" y="150"/>
+            </bpmndi:BPMNEdge>
+            <bpmndi:BPMNEdge id="flow5_di" bpmnElement="flow5">
+                <di:waypoint x="550" y="90"/>
+                <di:waypoint x="600" y="118"/>
+            </bpmndi:BPMNEdge>
+            <bpmndi:BPMNEdge id="flow6_di" bpmnElement="flow6">
+                <di:waypoint x="550" y="150"/>
+                <di:waypoint x="600" y="118"/>
+            </bpmndi:BPMNEdge>
+        </bpmndi:BPMNPlane>
+    </bpmndi:BPMNDiagram>
 </definitions>
